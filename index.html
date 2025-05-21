@@ -1202,45 +1202,85 @@
 
         function calculateSolutionExpressions() {
             const solutionDiv = document.getElementById('solutionExpressions');
-            solutionDiv.innerHTML = '<h3>Biểu thức nghiệm</h3>';
+            solutionDiv.innerHTML = '<h3>Biểu thức nghiệm (dùng để lặp):</h3>'; // Giữ nguyên hoặc đổi tiêu đề nếu muốn
             let expressionsLatex = '\\begin{cases}';
+
             for (let i = 0; i < m; i++) {
                 if (A[i][i] === 0) {
                     throw new Error(`Phần tử đường chéo chính A(${i + 1},${i + 1}) = 0. Không thể chia cho 0. Phương pháp Gauss-Seidel không áp dụng được.`);
                 }
-                let numerator = `${froundf(d[i])}`;
-                let firstTermInNumerator = (froundf(d[i]) === '0');
 
-                for (let j = 0; j < m; j++) {
-                    if (i === j) continue;
-                    if (A[i][j] !== 0) {
-                        const termCoeff = -A[i][j];
-                        let sign = '';
-                        if (termCoeff < 0) {
-                            sign = ' - ';
-                        } else {
-                            sign = ' + ';
-                        }
+                let rhsString = ""; // Chuỗi chứa vế phải của phương trình
+                const aii = A[i][i]; // Giá trị A[i][i] (mẫu số chung)
+                const aiiStr = froundf(aii); // A[i][i] đã được làm tròn
 
-                        const absTermCoeff = Math.abs(termCoeff);
-                        let coeffStr = '';
-                        if (absTermCoeff !== 1) {
-                            coeffStr = froundf(absTermCoeff);
-                        }
-
-                        if (firstTermInNumerator) {
-                            sign = (termCoeff < 0) ? '-' : '';
-                            numerator = '';
-                        }
-
-                        numerator += `${sign}${coeffStr}${varNames[j]}`;
-                        firstTermInNumerator = false;
+                // Xử lý số hạng tự do: d[i] / A[i][i]
+                if (d[i] !== 0) {
+                    if (aii === 1) { // Nếu A[i][i] = 1
+                        rhsString += froundf(d[i]);
+                    } else if (aii === -1) { // Nếu A[i][i] = -1
+                        rhsString += froundf(-d[i]);
+                    } else {
+                        rhsString += `\\frac{${froundf(d[i])}}{${aiiStr}}`;
                     }
                 }
-                if (numerator === '' && froundf(d[i]) === '0') numerator = '0';
-                expressionsLatex += `${varNames[i]} = \\frac{${numerator}}{${froundf(A[i][i])}}` + (i < m - 1 ? '\\\\[2ex]' : '');
+                // Nếu d[i] === 0, rhsString ban đầu sẽ rỗng, dấu của số hạng biến đầu tiên sẽ được xử lý sau
+
+                // Xử lý các số hạng chứa biến: - (A[i][j] / A[i][i]) * varNames[j]
+                for (let j = 0; j < m; j++) {
+                    if (i === j) continue; // Bỏ qua biến x_i ở vế phải
+                    if (A[i][j] === 0) continue; // Bỏ qua các số hạng có hệ số A[i][j] = 0
+
+                    const aij = A[i][j]; // Hệ số A[i][j]
+
+                    // Tính toán hệ số hiệu dụng cho varNames[j] là (-aij / aii)
+                    let effectiveCoeffNum = -aij;
+                    let effectiveCoeffDen = aii;
+
+                    let termOverallSignStr; // Dấu của số hạng này ("+" hoặc "-")
+                    if ((effectiveCoeffNum > 0 && effectiveCoeffDen > 0) || (effectiveCoeffNum < 0 && effectiveCoeffDen < 0)) {
+                        termOverallSignStr = "+"; // Hệ số hiệu dụng là dương
+                    } else {
+                        termOverallSignStr = "-"; // Hệ số hiệu dụng là âm
+                    }
+
+                    // Thêm dấu vào chuỗi rhsString
+                    if (rhsString === "") { // Nếu đây là số hạng đầu tiên ở vế phải
+                        if (termOverallSignStr === "-") {
+                            rhsString += "-"; // Bắt đầu bằng dấu trừ nếu âm
+                        }
+                        // Không thêm dấu "+" nếu là số hạng dương đầu tiên
+                    } else { // Nếu không phải số hạng đầu tiên
+                        rhsString += (termOverallSignStr === "+") ? " + " : " - ";
+                    }
+
+                    // Phần độ lớn của hệ số | A[i][j] / A[i][i] |
+                    const absAij = Math.abs(aij);
+                    const absAii = Math.abs(aii);
+
+                    if (absAii === 1) { // Nếu mẫu số A[i][i] là 1 hoặc -1 (đã xử lý dấu)
+                        if (absAij === 1) { // Hệ số là 1 (ví dụ 1*x_j)
+                            rhsString += varNames[j];
+                        } else { // Hệ số khác 1 (ví dụ 2*x_j)
+                            rhsString += `${froundf(absAij)}${varNames[j]}`;
+                        }
+                    } else { // Nếu mẫu số A[i][i] khác 1 và -1
+                        if (absAij === absAii) { // Nếu |A[i][j]| == |A[i][i]|, hệ số là 1 (ví dụ (5/5)*x_j)
+                            rhsString += varNames[j];
+                        } else { // Hiển thị dạng phân số
+                            rhsString += `\\frac{${froundf(absAij)}}{${froundf(absAii)}}${varNames[j]}`;
+                        }
+                    }
+                }
+
+                if (rhsString === "") { // Trường hợp tất cả vế phải bằng 0 (ví dụ x = 0)
+                    rhsString = "0";
+                }
+
+                expressionsLatex += `${varNames[i]} = ${rhsString}` + (i < m - 1 ? '\\\\[2ex]' : '');
             }
             expressionsLatex += '\\end{cases}';
+
             const exprDiv = document.createElement('div');
             exprDiv.className = 'math-formula';
             exprDiv.innerHTML = `\\[ ${expressionsLatex} \\]`;
