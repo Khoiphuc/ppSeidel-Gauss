@@ -27,9 +27,14 @@
             padding: 20px;
             line-height: 1.6;
             color: var(--text-color);
-            background-color: #f5f7fa;
             opacity: 1;
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+
+            /* THÊM CÁC DÒNG SAU: */
+            min-height: 100vh;
+            /* Đảm bảo body cao ít nhất bằng chiều cao màn hình */
+            box-sizing: border-box;
+            /* Quan trọng: để padding và border được tính vào tổng chiều cao/rộng */
         }
 
         body.page-fade-out {
@@ -153,7 +158,7 @@
 
         .custom-number-input input[readonly]#numEquations {
             /* Áp dụng cụ thể cho input này */
-            width: 700px;
+            width: 650px;
             /* Độ rộng của ô hiển thị số */
             text-align: center;
             border: none;
@@ -1251,7 +1256,7 @@
                 }
             }
             const matrixBdiv = document.getElementById('matrixB');
-            matrixBdiv.innerHTML = '<h3>Ma trận B \\(\\(X = BX + g\)\\):</h3>';
+            matrixBdiv.innerHTML = '<h3>Ma trận B \\(\(X = BX + g\)\\):</h3>';
             let matrixHTML = `\\[ B = \\begin{pmatrix}`;
             for (let i = 0; i < m; i++) {
                 for (let j = 0; j < m; j++) {
